@@ -1,0 +1,131 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Free Rewards</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      font-family: Arial, sans-serif;
+      background: #eef3ff;
+    }
+    .card {
+      max-width: 380px;
+      margin: 35px auto;
+      padding: 24px;
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 4px 18px #0002;
+      text-align: center;
+    }
+    input, button {
+      box-sizing: border-box;
+      width: 100%;
+      padding: 13px;
+      margin: 8px 0;
+      border-radius: 8px;
+      font-size: 16px;
+    }
+    input { border: 1px solid #bbb; }
+    button {
+      border: 0;
+      background: #1769ff;
+      color: white;
+    }
+    #status { overflow-wrap: anywhere; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Free Rewards</h1>
+    <p>Create your account or log in</p>
+
+    <input id="email" type="email"
+      placeholder="Email address" autocomplete="email">
+
+    <input id="password" type="password"
+      placeholder="Password (minimum 6 characters)"
+      autocomplete="current-password">
+
+    <button onclick="signup()">Sign Up</button>
+    <button onclick="login()">Login</button>
+    <button onclick="logout()">Logout</button>
+
+    <p id="status">Connecting to Firebase...</p>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyAK3T0AEj9NmAx755tsAyP3aVqKUcvL_TE",
+      authDomain: "free-rewards-app-dc0ca.firebaseapp.com",
+      projectId: "free-rewards-app-dc0ca",
+      storageBucket: "free-rewards-app-dc0ca.firebasestorage.app",
+      messagingSenderId: "767595055948",
+      appId: "1:767595055948:web:70ca2ccc1c9b43d68c1de9"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+
+    function show(message) {
+      document.getElementById("status").textContent = message;
+    }
+
+    function getInputs() {
+      return {
+        email: document.getElementById("email").value.trim(),
+        password: document.getElementById("password").value
+      };
+    }
+
+    async function signup() {
+      const {email, password} = getInputs();
+      if (!email || !password) {
+        show("Enter your email and password.");
+        return;
+      }
+      try {
+        await auth.createUserWithEmailAndPassword(email, password);
+        show("Account created successfully!");
+      } catch (error) {
+        show(error.message);
+      }
+    }
+
+    async function login() {
+      const {email, password} = getInputs();
+      if (!email || !password) {
+        show("Enter your email and password.");
+        return;
+      }
+      try {
+        await auth.signInWithEmailAndPassword(email, password);
+        show("Login successful!");
+      } catch (error) {
+        show(error.message);
+      }
+    }
+
+    async function logout() {
+      try {
+        await auth.signOut();
+        show("Logged out successfully.");
+      } catch (error) {
+        show(error.message);
+      }
+    }
+
+    auth.onAuthStateChanged(user => {
+      if (user) {
+        show("Logged in: " + user.email);
+      }
+    });
+  </script>
+</body>
+</html>
