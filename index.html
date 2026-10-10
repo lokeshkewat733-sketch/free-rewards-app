@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,60 +5,57 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Free Rewards</title>
   <style>
-    body {
-      margin: 0;
-      padding: 20px;
-      font-family: Arial, sans-serif;
-      background: #eef3ff;
-    }
-    .card {
-      max-width: 380px;
-      margin: 35px auto;
-      padding: 24px;
-      background: white;
-      border-radius: 16px;
-      box-shadow: 0 4px 18px #0002;
-      text-align: center;
-    }
-    input, button {
-      box-sizing: border-box;
-      width: 100%;
-      padding: 13px;
-      margin: 8px 0;
-      border-radius: 8px;
-      font-size: 16px;
-    }
-    input { border: 1px solid #bbb; }
-    button {
-      border: 0;
-      background: #1769ff;
-      color: white;
-    }
-    #status { overflow-wrap: anywhere; }
+    * { box-sizing: border-box; }
+    body { margin:0; padding:18px; font-family:Arial,sans-serif; background:#eef3ff; color:#172033; }
+    .card { max-width:430px; margin:24px auto; padding:22px; background:#fff; border-radius:16px; box-shadow:0 4px 18px #0002; }
+    h1,h2 { margin-top:0; }
+    input,button { width:100%; padding:13px; margin:7px 0; border-radius:8px; font-size:16px; }
+    input { border:1px solid #bbb; }
+    button { border:0; background:#1769ff; color:#fff; cursor:pointer; }
+    button.secondary { background:#586579; }
+    button:disabled { opacity:.6; }
+    .task { border:1px solid #dce3f2; border-radius:12px; padding:14px; margin:12px 0; }
+    #status { overflow-wrap:anywhere; white-space:pre-wrap; }
+    .points { font-size:24px; font-weight:bold; color:#1769ff; }
+    .small { font-size:13px; color:#596579; }
+    .hidden { display:none; }
   </style>
 </head>
 <body>
   <div class="card">
     <h1>Free Rewards</h1>
     <p>Create your account or log in</p>
-
-    <input id="email" type="email"
-      placeholder="Email address" autocomplete="email">
-
-    <input id="password" type="password"
-      placeholder="Password (minimum 6 characters)"
-      autocomplete="current-password">
-
+    <input id="email" type="email" placeholder="Email address" autocomplete="email">
+    <input id="password" type="password" placeholder="Password (minimum 6 characters)" autocomplete="current-password">
     <button onclick="signup()">Sign Up</button>
     <button onclick="login()">Login</button>
-    <button onclick="logout()">Logout</button>
-
+    <button class="secondary" onclick="logout()">Logout</button>
     <p id="status">Connecting to Firebase...</p>
+  </div>
+
+  <div id="tasksCard" class="card hidden">
+    <h2>Your Rewards</h2>
+    <p>Points balance</p>
+    <div class="points"><span id="points">0</span> points</div>
+    <div class="task">
+      <h3>Daily Check-in — 10 points</h3>
+      <p>Check in once each day to earn points.</p>
+      <button id="dailyBtn" onclick="claimDaily()">Complete Daily Check-in</button>
+    </div>
+    <div class="task">
+      <h3>Daily Quiz — 10 points</h3>
+      <p id="quizQuestion">Which number is even?</p>
+      <button onclick="answerQuiz(2)">2</button>
+      <button onclick="answerQuiz(3)">3</button>
+      <button onclick="answerQuiz(5)">5</button>
+      <p class="small">You get one attempt per day. Correct answer earns 10 points.</p>
+    </div>
   </div>
 
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-functions-compat.js"></script>
   <script>
     const firebaseConfig = {
       apiKey: "AIzaSyAK3T0AEj9NmAx755tsAyP3aVqKUcvL_TE",
@@ -72,58 +68,67 @@
 
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
+    const db = firebase.firestore();
+    const functions = firebase.app().functions('asia-south1');
 
-    function show(message) {
-      document.getElementById("status").textContent = message;
-    }
-
+    function show(message) { document.getElementById('status').textContent = message; }
     function getInputs() {
       return {
-        email: document.getElementById("email").value.trim(),
-        password: document.getElementById("password").value
+        email: document.getElementById('email').value.trim(),
+        password: document.getElementById('password').value
       };
     }
-
     async function signup() {
-      const {email, password} = getInputs();
-      if (!email || !password) {
-        show("Enter your email and password.");
-        return;
-      }
-      try {
-        await auth.createUserWithEmailAndPassword(email, password);
-        show("Account created successfully!");
-      } catch (error) {
-        show(error.message);
-      }
+      const {email,password}=getInputs();
+      if(!email||!password) return show('Enter your email and password.');
+      try { await auth.createUserWithEmailAndPassword(email,password); show('Account created successfully!'); }
+      catch(e) { show(e.message); }
     }
-
     async function login() {
-      const {email, password} = getInputs();
-      if (!email || !password) {
-        show("Enter your email and password.");
-        return;
-      }
-      try {
-        await auth.signInWithEmailAndPassword(email, password);
-        show("Login successful!");
-      } catch (error) {
-        show(error.message);
-      }
+      const {email,password}=getInputs();
+      if(!email||!password) return show('Enter your email and password.');
+      try { await auth.signInWithEmailAndPassword(email,password); show('Login successful!'); }
+      catch(e) { show(e.message); }
     }
-
     async function logout() {
-      try {
-        await auth.signOut();
-        show("Logged out successfully.");
-      } catch (error) {
-        show(error.message);
-      }
+      try { await auth.signOut(); document.getElementById('tasksCard').classList.add('hidden'); show('Logged out successfully.'); }
+      catch(e) { show(e.message); }
     }
 
-    auth.onAuthStateChanged(user => {
-      if (user) {
-        show("Logged in: " + user.email);
+    async function refreshPoints() {
+      const user=auth.currentUser;
+      if(!user) return;
+      try {
+        const snap=await db.collection('users').doc(user.uid).get();
+        document.getElementById('points').textContent = snap.exists ? (snap.data().points || 0) : 0;
+      } catch(e) { show('Could not load points: '+e.message); }
+    }
+    async function claimDaily() {
+      const btn=document.getElementById('dailyBtn'); btn.disabled=true;
+      try {
+        const result=await functions.httpsCallable('claimDailyCheckIn')({});
+        show(result.data.message || 'Daily check-in complete!');
+        await refreshPoints();
+      } catch(e) { show(e.message); }
+      finally { btn.disabled=false; }
+    }
+    async function answerQuiz(answer) {
+      try {
+        const result=await functions.httpsCallable('submitDailyQuiz')({answer});
+        show(result.data.message || 'Quiz submitted.');
+        await refreshPoints();
+      } catch(e) { show(e.message); }
+    }
+    auth.onAuthStateChanged(async user => {
+      const card=document.getElementById('tasksCard');
+      if(user) {
+        card.classList.remove('hidden');
+        show('Logged in: '+user.email);
+        await refreshPoints();
+      } else {
+        card.classList.add('hidden');
+        document.getElementById('points').textContent='0';
+        show('Create your account or log in.');
       }
     });
   </script>
